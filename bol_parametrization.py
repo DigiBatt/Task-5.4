@@ -54,7 +54,7 @@ def build_optimizer(
                 ),
                 f"Tau{i} [s]": pybop.Parameter(
                     initial_value=100,
-                    distribution=pybop.LogUniform(1e0, 1e3),
+                    distribution=pybop.LogUniform(1e0, 1e4),
                     transformation=pybop.LogTransformation(),
                 ),
                 f"C{i} [F]": pybamm.Parameter(f"Tau{i} [s]")
@@ -75,7 +75,7 @@ def build_optimizer(
     )
     problem = pybop.Problem(simulator=simulator, cost=cost)
 
-    options = pybop.SciPyDifferentialEvolutionOptions(seed=42, maxiter=3, polish=True)
+    options = pybop.SciPyDifferentialEvolutionOptions(seed=42, polish=True)
     optimizer = pybop.SciPyDifferentialEvolution(problem=problem, options=options)
     return optimizer
 
@@ -222,7 +222,7 @@ def extract_parameters(
             "Step Count / 1", maintain_order=True
         ):
             i = step.select("Test Time / s").to_series().first() - 10  # type: ignore
-            j = step.select("Test Time / s").to_series().last() + 30  # type: ignore
+            j = step.select("Test Time / s").to_series().last() + 60  # type: ignore
             chunk = data.filter(pl.col("Test Time / s").is_between(i, j, closed="both"))
 
             t = chunk.select("Test Time / s").to_series().to_numpy()
@@ -238,17 +238,7 @@ def extract_parameters(
                 .T,
                 soc,  # type: ignore
             )
-            # fig, axs = plt.subplots(3, 1, figsize=(10, 5), sharex=True)
-            # axs[0].plot(t, V)
-            # axs[0].plot(t, U)
-            # axs[1].plot(t, I)
-            # axs[2].plot(t, V - U)
-            # optim = build_optimizer(t, I, V - U, n=1)
-            # res = optim.run()
-            # sim = optim._problem._simulator.solve(inputs=res.best_inputs)
-            # axs[2].plot(t, sim["Voltage [V]"].data, label="Fit")
-            # plt.show()
-            # continue
+
             futures[executor.submit(fit_chunk, t, I, pol, n=1)] = {
                 "State of Charge / 1": soc.mean(),
                 "Direction / 1": direction,
@@ -328,7 +318,7 @@ def combine_results(
 
 
 if __name__ == "__main__":
-    data = load_data()  # .filter(pl.col("_step_length") > 1)
+    data = load_data()
     print(data)
 
     ocv = extract_ocv(data=data)
