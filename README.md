@@ -1,7 +1,8 @@
 # Introduction
 
 # Contents
-- `bol_parametrization.py`: 
+- `bol_parametrization.py`:
+- `ecm_model.py`: Defines an equivalent circuit model (ECM) uing the extracted ECM parameters 
 - `upscaling.py`:  
 
 # Using the repository
