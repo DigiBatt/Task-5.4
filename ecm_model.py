@@ -1,6 +1,7 @@
 # Upscale things
 import pathlib
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 import polars as pl
@@ -31,11 +32,12 @@ class ECM:
         self,
         parameters: dict | None = None,
         samples: int = 1,
+        parameters_source: Literal["gitt", "ici"] = "gitt",
     ):
         self._data = pl.read_csv(
             pathlib.Path(__file__)
             .resolve()
-            .parent.joinpath("data/gitt_ecm_parameters.csv")
+            .parent.joinpath(f"data/{parameters_source}_results.csv")
         )
         if parameters is None:
             parameters = {}

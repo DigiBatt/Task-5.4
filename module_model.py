@@ -1,5 +1,6 @@
 # Upscale things
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 import scipy.optimize
@@ -29,12 +30,15 @@ class Module:
         cell_parameters: dict | None = None,
         cells_in_series: int = 1,
         cells_in_parallel: int = 1,
+        parameters_source: Literal["gitt", "ici"] = "gitt",
     ):
         self._cells_in_series = cells_in_series
         self._cells_in_parallel = cells_in_parallel
 
         self._ecm = ECM(
-            parameters=cell_parameters, samples=cells_in_series * cells_in_parallel
+            parameters=cell_parameters,
+            samples=cells_in_series * cells_in_parallel,
+            parameters_source=parameters_source,
         )
         if module_parameters is None:
             module_parameters = {}

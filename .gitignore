@@ -219,3 +219,4 @@ __marimo__/
 
 # data files
 data/ocv_soh.parquet
+data/DigiBatt_CG50_*

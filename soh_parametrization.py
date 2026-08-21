@@ -95,7 +95,7 @@ if __name__ == "__main__":
     soh = extract_soh(steps, data)
     ocv = extract_ocv(soh, steps, data)
     ocv.select(
-        ["State of Charge / 1", "Voltage / V", "State of Health / 1"]
+        ["State of Charge / 1", "Voltage / V", "State of Health / 1", "_file"]
     ).sink_parquet(
         pathlib.Path(__file__).resolve().parent.joinpath("data/ocv_soh.parquet")
     )
