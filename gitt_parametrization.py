@@ -3,6 +3,7 @@ import pathlib
 import numpy as np
 import polars as pl
 import tqdm.auto as tqdm
+from scipy.integrate import cumulative_trapezoid
 
 from utils import determine_direction, fit_decay, fit_polarization, interpolate
 
@@ -179,6 +180,14 @@ def interp_ocv(soc: np.ndarray, direction: np.ndarray, ocv: pl.DataFrame) -> np.
 
 if __name__ == "__main__":
     data = load_data()
+    t, I = (
+        data.filter(pl.col("Direction / 1") == "Discharge")
+        .select("Test Time / h", "Current / A")
+        .to_numpy()
+        .T
+    )
+    Q = cumulative_trapezoid(I, t, initial=0)[-1]
+    Q_expr = pl.lit(Q).alias("Discharge Capacity / Ah")
     ocv = fit_ocv(data)
     expr_ocv = pl.struct("State of Charge / 1", "Direction / 1").map_batches(
         lambda s: interp_ocv(
@@ -206,6 +215,6 @@ if __name__ == "__main__":
             "Log Tau1 / 1",
         ),
     )
-    ocv.write_csv("data/gitt_ocv.csv")
-    ecm.write_csv("data/gitt_ecm.csv")
-    combined.write_csv("data/gitt_results.csv")
+    ocv.with_columns(Q_expr).write_csv("data/gitt_ocv.csv")
+    ecm.with_columns(Q_expr).write_csv("data/gitt_ecm.csv")
+    combined.with_columns(Q_expr).write_csv("data/gitt_results.csv")

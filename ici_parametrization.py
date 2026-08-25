@@ -3,6 +3,7 @@ import pathlib
 import numpy as np
 import polars as pl
 import tqdm.auto as tqdm
+from scipy.integrate import cumulative_trapezoid
 
 from utils import determine_direction, fit_decay, fit_polarization, interpolate
 
@@ -158,6 +159,14 @@ if __name__ == "__main__":
     combined_all = []
     for data in load_data():
         file = data.select("file").to_series().first()
+        t, I = (
+            data.filter(pl.col("Direction / 1") == "Discharge")
+            .select("Test Time / h", "Current / A")
+            .to_numpy()
+            .T
+        )
+        Q = cumulative_trapezoid(I, t, initial=0)[-1]
+        Q_expr = pl.lit(Q).alias("Discharge Capacity / Ah")
         ocv = fit_ocv(data)
         expr_ocv = pl.struct("State of Charge / 1", "Direction / 1").map_batches(
             lambda s: interp_ocv(
@@ -175,9 +184,11 @@ if __name__ == "__main__":
         )
 
         combined = combine_results(ocv, ecm)
-        ocv_all.append(ocv)
-        ecm_all.append(ecm)
-        combined_all.append(combined.with_columns(pl.lit(file).alias("File / 1")))
+        ocv_all.append(ocv.with_columns(Q_expr))
+        ecm_all.append(ecm.with_columns(Q_expr))
+        combined_all.append(
+            combined.with_columns(pl.lit(file).alias("File / 1"), Q_expr)
+        )
     pl.concat(ocv_all, how="diagonal_relaxed").write_csv("data/ici_ocv.csv")
     pl.concat(ecm_all, how="diagonal_relaxed").write_csv("data/ici_ecm.csv")
     pl.concat(combined_all, how="diagonal_relaxed").write_csv("data/ici_results.csv")
