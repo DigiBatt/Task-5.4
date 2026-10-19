@@ -20,7 +20,15 @@ def fit_decay(t, V, sigma=1e-3):
     p0 = [V[-1], 0.0, np.log10(100)]
 
     popt, pcov = curve_fit(
-        decay, t, V, p0=p0, sigma=sigma, absolute_sigma=True, bounds=(lo, hi)
+        decay,
+        t,
+        V,
+        p0=p0,
+        sigma=sigma,
+        absolute_sigma=True,
+        bounds=(lo, hi),
+        maxfev=1000000,
+        jac="3-point",
     )
     perr = np.sqrt(np.diag(pcov))
     results = {
@@ -49,24 +57,28 @@ def fit_polarization(t, U, I, sigma=1e-3):
         simulate,
         t,
         U,
-        p0=[0.0, 0.01, 0.01, np.log10(100)],
+        p0=[0.0, 1e-2, 1e-2, 2.0],
         sigma=sigma,
         absolute_sigma=True,
-        bounds=([-1, 1e-5, 1e-5, np.log10(2)], [1, 10, 10, np.log10(36000)]),
-        maxfev=10000,
+        bounds=([-1, 1e-5, 1e-5, np.log10(2)], [1, 1e1, 1e1, np.log10(36000)]),
+        max_nfev=10000,
+        jac="3-point",
     )
     perr = np.sqrt(np.diag(pcov))
     results = {
         "Element-1 initial overpotential / V": popt[0],
         "R0 / Ohm": popt[1],
         "R1 / Ohm": popt[2],
-        "Log Tau1 / 1": popt[3],
         "Tau1 / s": 10 ** popt[3],
+        #
+        "Log Tau1 / 1": popt[3],
+        #
         "Element-1 initial overpotential stdev / V": perr[0],
         "R0 stdev / Ohm": perr[1],
         "R1 stdev / Ohm": perr[2],
-        "Log Tau1 stdev / 1": perr[3],
         "Tau1 stdev / s": (10 ** popt[3]) * np.log(10) * perr[3],
+        #
+        "Log Tau1 stdev / 1": perr[3],
     }
     return results
 

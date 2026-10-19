@@ -1,9 +1,12 @@
 # Introduction
+This repository contains code related to parametrization of equivalent circuit models in task 5.4
+
 
 # Contents
-- `bol_parametrization.py`:
+- `ici_parametrization.py`: Parametrizes multiple ECM models for a series of ICI tests.
+- `gitt_parametrization.py`: Parametrizes an ECM model from a GITT test.
 - `ecm_model.py`: Defines an equivalent circuit model (ECM) uing the extracted ECM parameters 
-- `upscaling.py`:  
+- `module_model.py`: Implements a module model using the ECM model.   
 
 # Using the repository
 - `gitt_ecm_parameters.csv` contains $OCV$, $R_0$, $R_1$ and $\tau_1$ as a functions of SOC and hysteresis direction. 

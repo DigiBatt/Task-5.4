@@ -141,7 +141,6 @@ def combine_results(ocv: pl.DataFrame, ecm: pl.DataFrame):
                 "R0 / Ohm",
                 "R1 / Ohm",
                 "Tau1 / s",
-                "Log Tau1 / 1",
             ]:
                 if col in df:
                     results[-1][col] = interpolate(
@@ -212,7 +211,6 @@ if __name__ == "__main__":
             "R0 / Ohm",
             "R1 / Ohm",
             "Tau1 / s",
-            "Log Tau1 / 1",
         ),
     )
     ocv.with_columns(Q_expr).write_csv("data/gitt_ocv.csv")

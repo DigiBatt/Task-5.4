@@ -39,11 +39,25 @@ class ECM:
             .resolve()
             .parent.joinpath(f"data/{parameters_source}_results.csv")
         )
+        if parameters_source == "ici":
+            self._data = (
+                self._data.filter(pl.col("File / 1").str.contains("001-ici"))
+                .group_by("Direction / 1", "State of Charge / 1")
+                .agg(
+                    pl.col("Open-circuit voltage / V")
+                    .mean()
+                    .alias("Open-circuit voltage / V"),
+                    pl.col("R0 / Ohm").mean().alias("R0 / Ohm"),
+                    pl.col("R1 / Ohm").mean().alias("R1 / Ohm"),
+                    pl.col("Tau1 / s").mean().alias("Tau1 / s"),
+                )
+            )
         if parameters is None:
             parameters = {}
 
         parameters.setdefault("Initial State of Charge / 1", 0.5)
         parameters.setdefault("Initial Hysteresis / 1", 0.0)
+        parameters.setdefault("Initial Polarization / V", 0.0)
 
         parameters.setdefault("Nominal Capacity / Ah", 5.0)
 
@@ -102,7 +116,7 @@ class ECM:
     @property
     def x0(self):
         soc = np.full((self.samples, 1), self.parameters["Initial State of Charge / 1"])
-        pol = np.zeros((self.samples, 1))
+        pol = np.full((self.samples, 1), self.parameters["Initial Polarization / V"])
         hyst = np.full((self.samples, 1), self.parameters["Initial Hysteresis / 1"])
         return np.vstack((soc, pol, hyst))
 
@@ -182,12 +196,22 @@ class ECM:
         """
         return x + dt * self.ode(x, u)
 
-    def simulate(self, t: np.ndarray, u: np.ndarray, x0: np.ndarray | None = None):
+    def simulate(
+        self,
+        t: np.ndarray,
+        u: np.ndarray,
+        x0: np.ndarray | None = None,
+        progress: bool = False,
+    ):
         if x0 is None:
             x0 = self.x0
 
         x = [x0]
-        for k, dt in tqdm.tqdm(enumerate(np.diff(t), start=1), initial=1, total=t.size):
+        for k, dt in (
+            tqdm.tqdm(enumerate(np.diff(t), start=1), initial=1, total=t.size)
+            if progress
+            else enumerate(np.diff(t), start=1)
+        ):
             x0 = self.step(dt, x0, u[:, k - 1 : k])
             x.append(x0)
 

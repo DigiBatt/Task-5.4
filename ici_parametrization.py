@@ -116,7 +116,6 @@ def combine_results(ocv: pl.DataFrame, ecm: pl.DataFrame):
                 "R0 / Ohm",
                 "R1 / Ohm",
                 "Tau1 / s",
-                "Log Tau1 / 1",
             ]:
                 if col in df:
                     results[-1][col] = interpolate(
@@ -183,7 +182,20 @@ if __name__ == "__main__":
             )
         )
 
-        combined = combine_results(ocv, ecm)
+        combined = combine_results(
+            ocv.select(
+                "Direction / 1",
+                "State of Charge / 1",
+                "Open-circuit voltage / V",
+            ),
+            ecm.select(
+                "Direction / 1",
+                "State of Charge / 1",
+                "R0 / Ohm",
+                "R1 / Ohm",
+                "Tau1 / s",
+            ),
+        )
         ocv_all.append(ocv.with_columns(Q_expr))
         ecm_all.append(ecm.with_columns(Q_expr))
         combined_all.append(
