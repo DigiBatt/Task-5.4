@@ -5,7 +5,7 @@ import polars as pl
 import scipy.optimize as optimize
 from scipy.integrate import cumulative_trapezoid
 
-from ecm_model import ECM
+from ecm import ECM
 
 
 def load_file(file: pathlib.Path):

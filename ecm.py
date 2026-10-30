@@ -10,12 +10,13 @@ from scipy.interpolate import interp1d
 
 
 def _make_interpolator(x, y):
+    fill = (y[0], y[-1])
     return interp1d(
         x,
         y,
         kind="linear",
         bounds_error=False,
-        fill_value="extrapolate",  # type: ignore
+        fill_value=fill,  # type: ignore
     )
 
 
@@ -61,30 +62,11 @@ class ECM:
 
         parameters.setdefault("Nominal Capacity / Ah", 5.0)
 
-        parameters.setdefault("Mean State of Health / 1", 1.0)
-        parameters.setdefault("Stdev State of Health / 1", 0.05)
+        parameters.setdefault("State of Health / 1", 1.0)
 
-        parameters.setdefault("Mean State of Resistance / 1", 1.0)
-        parameters.setdefault("Stdev State of Resistance / 1", 0.05)
+        parameters.setdefault("State of Resistance / 1", 1.0)
 
         parameters.setdefault("Timeconstant hysteresis / 1", 0.1)
-
-        parameters.setdefault(
-            "State of Health / 1",
-            np.random.normal(
-                parameters["Mean State of Health / 1"],
-                parameters["Stdev State of Health / 1"],
-                samples,
-            )[:, np.newaxis],
-        )
-        parameters.setdefault(
-            "State of Resistance / 1",
-            np.random.normal(
-                parameters["Mean State of Resistance / 1"],
-                parameters["Stdev State of Resistance / 1"],
-                samples,
-            )[:, np.newaxis],
-        )
 
         for df in self._data.partition_by("Direction / 1"):
             for col in [
@@ -93,10 +75,15 @@ class ECM:
                 "R1 / Ohm",
                 "Tau1 / s",
             ]:
+                df = df.sort("State of Charge / 1")
                 d = df.select("Direction / 1").to_series().unique().item()
                 x = df.select("State of Charge / 1").to_series().to_numpy()
                 y = df.select(col).to_series().to_numpy()
-                parameters.setdefault(f"{d} {col}", _make_interpolator(x, y))
+
+                # Modify column with constant boundary holds
+                x_ = x  # np.concatenate(([-1.0], x, [2.0]))
+                y_ = y  # np.concatenate(([y[0]], y, [y[-1]]))
+                parameters.setdefault(f"{d} {col}", _make_interpolator(x_, y_))
         self._parameters = parameters
         self._samples = samples
         return
@@ -124,8 +111,8 @@ class ECM:
         return np.vsplit(x, 3)
 
     def _hmix(self, hyst: np.ndarray, chg: np.ndarray, dhg: np.ndarray):
-        alpha = (1 + hyst) / 2
-        beta = (hyst - 1) / 2
+        alpha = (1.0 + hyst) / 2
+        beta = (hyst - 1.0) / 2
         return alpha * chg - beta * dhg
 
     def _R0(self, x: np.ndarray):
